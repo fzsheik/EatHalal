@@ -1,0 +1,18 @@
+const getRestData = () => {
+    const rawdata  = fs.readFileSync('restaurants.json');
+    const restData = JSON.parse(rawdata);
+    return restData;
+}
+
+app.get('/restaurants', (req, res) => {
+    const restData = getRestData();
+    let list = 'Restaurant \n';
+    restData.forEach((restaurant) => {
+        if (restaurant.zip === '08817'){
+            list += `${restaurant.name} \n`;
+        }
+
+    })
+
+    res.send(list);
+})

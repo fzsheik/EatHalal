@@ -1,25 +1,32 @@
 const express = require('express');
 const app = express()
 const fs = require('fs')
+require('dotenv').config();
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const {getCoordinatesByZipcode, getNearbyPlaces } = require('./helper')
 
-const getRestData = () => {
-    const rawdata  = fs.readFileSync('restaurants.json');
-    const restData = JSON.parse(rawdata);
-    return restData;
-}
 
-app.get('/restaurants', (req, res) => {
-    const restData = getRestData();
-    let list = 'Restaurant \n';
-    restData.forEach((restaurant) => {
-        if (restaurant.zip === '08817'){
-            list += `${restaurant.name} \n`;
-        }
 
-    })
 
-    res.send(list);
+
+app.get('/restaurants/zipcode/:zipcode', async (req, res) => {
+    const zipcode = req.params.zipcode;
+
+    const location = await getCoordinatesByZipcode(zipcode, GOOGLE_API_KEY);
+
+    const restaurants = await getNearbyPlaces(location, 16093.4, GOOGLE_API_KEY )
+    let list = `Places Near ${zipcode} <br>`;
+    restaurants.forEach(r => {
+        list += `${r.name} <br>`
+        
+    });
+    res.send(list)
+    
+    
+    
 })
+
+
 app.get('/', (req, res) => {
     res.send("EatHalal is running")
 });
