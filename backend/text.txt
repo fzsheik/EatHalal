@@ -1,18 +1,81 @@
-const getRestData = () => {
-    const rawdata  = fs.readFileSync('restaurants.json');
-    const restData = JSON.parse(rawdata);
-    return restData;
+const axios = require('axios')
+require('dotenv').config();
+
+const NEARBY_SEARCH_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+const TEXT_SEARCH_URL = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+const PLACE_DETAILS_URL = 'https://maps.googleapis.com/maps/api/place/details/json';
+
+async function getCoordinatesByZipcode(zipcode, key){
+    try {
+    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${zipcode}&key=${key}`
+    const geoloc = await axios.get(geocodeUrl)
+    console.log(geoloc.data.results[0].geometry.location)
+    return location =  `${geoloc.data.results[0].geometry.location.lat},${geoloc.data.results[0].geometry.location.lng}`
+    } catch (error) {
+        console.error('Error with Geocoding API:', error);
+    }
+
 }
 
-app.get('/restaurants', (req, res) => {
-    const restData = getRestData();
-    let list = 'Restaurant \n';
-    restData.forEach((restaurant) => {
-        if (restaurant.zip === '08817'){
-            list += `${restaurant.name} \n`;
-        }
+async function getNearbyPlaces(location, radius, key) {
 
-    })
+    const allResults = []
+    let nextPageToken = null
+    try {
 
-    res.send(list);
-})
+        do {
+            const nearbyUrl = `${NEARBY_SEARCH_URL}?location=${location.lat},${location.lng}&radius=${radius}&key=${key}${
+                nextPageToken ? `&pagetoken=${nextPageToken}` : ''
+            }`;
+
+        
+            const response = await axios.get(nearbyUrl);
+
+            
+            if (response.data.results) {
+                allResults.push(...response.data.results);
+            }
+
+            nextPageToken = response.data.results.next_page_token;
+
+
+            if (nextPageToken){
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+            }
+    } while (nextPageToken)
+
+        console.log("Nearby Places:", allResults);
+        return allResults; // Returns an array of places
+    } catch (error) {
+        console.error('Error with Nearby Search API:', error.response?.data || error.message);
+        throw error;
+    }
+}
+
+// Perform a Text Search to capture broader results with keywords
+async function getPlacesByTextSearch(query, key) {
+    try {
+        const textSearchUrl = `${TEXT_SEARCH_URL}?query=${encodeURIComponent(query)}&key=${key}`;
+        const places = await axios.get(textSearchUrl);
+        console.log("Text Search Places:", places.data.results);
+        return places.data.results; // Returns an array of places
+    } catch (error) {
+        console.error('Error with Text Search API:', error.response?.data || error.message);
+        throw error;
+    }
+}
+
+// Get detailed information for a specific place using Place ID
+async function getPlaceDetails(placeId, key) {
+    try {
+        const detailsUrl = `${PLACE_DETAILS_URL}?place_id=${placeId}&key=${key}`;
+        const placeDetails = await axios.get(detailsUrl);
+        console.log("Place Details:", placeDetails.data.result);
+        return placeDetails.data.result; // Returns a detailed place object
+    } catch (error) {
+        console.error('Error with Place Details API:', error.response?.data || error.message);
+        throw error;
+    }
+}
+
+module.exports = {getCoordinatesByZipcode, getNearbyPlaces, getPlacesByTextSearch}
