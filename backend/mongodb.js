@@ -6,7 +6,7 @@ async function main(){
      * Connection URI. Update <username>, <password>, and <your-cluster-url> to reflect your cluster.
      * See https://docs.mongodb.com/ecosystem/drivers/node/ for more details
      */
-    const uri = "mongodb://fzsheik:shark@195.26.255.44:27017/halalApp?authSource=halalApp";
+    //const uri =
  
 
     const client = new MongoClient(uri);
